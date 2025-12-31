@@ -33,8 +33,8 @@ export function HeroSection() {
   const [inputValue, setInputValue] = useState("");
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
-  const handleSubmit = async (content: string, fileType?: string, imageData?: string) => {
-    const result = await enhancePrompt(content, selectedMode, fileType, imageData);
+  const handleSubmit = async (content: string, fileType?: string | null, imageData?: string[]) => {
+    const result = await enhancePrompt(content, selectedMode, fileType ?? undefined, imageData);
     
     // Save to history after successful enhancement
     if (result) {
