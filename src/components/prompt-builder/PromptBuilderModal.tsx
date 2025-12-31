@@ -7,6 +7,7 @@ import { CodePreview } from "./CodePreview";
 import { LivePreview } from "./LivePreview";
 import { RefinementChat } from "./RefinementChat";
 import { useGenerateComponent, type ComponentConfig } from "@/hooks/useGenerateComponent";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface PromptBuilderModalProps {
   open: boolean;
@@ -247,831 +248,588 @@ export function PromptBuilderModal({ open, onOpenChange, onInsertPrompt }: Promp
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-gradient-to-br from-neutral-950 via-neutral-950 to-neutral-900 border-neutral-800/90 shadow-[0_24px_80px_rgba(0,0,0,0.75)] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-800/90 bg-neutral-950/80 px-3 sm:px-4 py-2 backdrop-blur-md">
-          <div className="flex items-center gap-3">
+        <ErrorBoundary>
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-neutral-800/90 bg-neutral-950/80 px-3 sm:px-4 py-2 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-emerald-400 to-emerald-300 text-[0.65rem] font-semibold tracking-[0.16em] text-neutral-950">
+                  PB
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-xs font-semibold tracking-tight text-neutral-50">
+                    Prompt Builder
+                  </span>
+                  <span className="text-[0.65rem] text-neutral-500">
+                    Layout · Style · Motion
+                  </span>
+                </div>
+              </div>
+
+              {/* Mode Toggle */}
+              <div className="hidden sm:flex items-center rounded-full border border-neutral-700 bg-neutral-900/80 p-[0.15rem] text-[0.7rem]">
+                <button
+                  onClick={() => setBuilderMode("prompt")}
+                  className={cn(
+                    "px-3 py-1 rounded-full transition-colors flex items-center gap-1.5",
+                    builderMode === "prompt"
+                      ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
+                      : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                  )}
+                >
+                  <FileText className="h-3 w-3" />
+                  Prompt
+                </button>
+                <button
+                  onClick={() => setBuilderMode("generate")}
+                  className={cn(
+                    "px-3 py-1 rounded-full transition-colors flex items-center gap-1.5",
+                    builderMode === "generate"
+                      ? "bg-emerald-500 text-neutral-950 font-medium shadow-sm"
+                      : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                  )}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Generate
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
-              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-emerald-400 to-emerald-300 text-[0.65rem] font-semibold tracking-[0.16em] text-neutral-950">
-                PB
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-xs font-semibold tracking-tight text-neutral-50">
-                  Prompt Builder
-                </span>
-                <span className="text-[0.65rem] text-neutral-500">
-                  Layout · Style · Motion
-                </span>
-              </div>
-            </div>
-
-            {/* Mode Toggle */}
-            <div className="hidden sm:flex items-center rounded-full border border-neutral-700 bg-neutral-900/80 p-[0.15rem] text-[0.7rem]">
-              <button
-                onClick={() => setBuilderMode("prompt")}
-                className={cn(
-                  "px-3 py-1 rounded-full transition-colors flex items-center gap-1.5",
-                  builderMode === "prompt"
-                    ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
-                    : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-                )}
-              >
-                <FileText className="h-3 w-3" />
-                Prompt
-              </button>
-              <button
-                onClick={() => setBuilderMode("generate")}
-                className={cn(
-                  "px-3 py-1 rounded-full transition-colors flex items-center gap-1.5",
-                  builderMode === "generate"
-                    ? "bg-emerald-500 text-neutral-950 font-medium shadow-sm"
-                    : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-                )}
-              >
-                <Sparkles className="h-3 w-3" />
-                Generate
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReset}
-              className="h-7 px-2.5 rounded-full border border-neutral-800 bg-neutral-900/80 text-[0.7rem] text-neutral-300 hover:bg-neutral-800/80 hover:text-neutral-100"
-            >
-              <RotateCcw className="h-3 w-3 mr-1 opacity-80" />
-              Reset
-            </Button>
-
-            <div className="hidden sm:flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={handleReset}
                 className="h-7 px-2.5 rounded-full border border-neutral-800 bg-neutral-900/80 text-[0.7rem] text-neutral-300 hover:bg-neutral-800/80 hover:text-neutral-100"
               >
-                <HelpCircle className="h-3.5 w-3.5 mr-1" />
-                Help
+                <RotateCcw className="h-3 w-3 mr-1 opacity-80" />
+                Reset
+              </Button>
+
+              <div className="hidden sm:flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2.5 rounded-full border border-neutral-800 bg-neutral-900/80 text-[0.7rem] text-neutral-300 hover:bg-neutral-800/80 hover:text-neutral-100"
+                >
+                  <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                  Help
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className="h-7 w-7 rounded-full border border-neutral-800 bg-neutral-900/80 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-100"
+              >
+                <X className="h-3.5 w-3.5" />
               </Button>
             </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-              className="h-7 w-7 rounded-full border border-neutral-800 bg-neutral-900/80 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-100"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
           </div>
-        </div>
 
-        {/* Body */}
-        <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
-          {/* LEFT PANE: Controls */}
-          <div className="w-full md:w-[52%] border-r border-neutral-800/80 overflow-y-auto bg-gradient-to-b from-neutral-950 via-neutral-950/98 to-neutral-950/96">
-            {/* Source controls */}
-            <div className="border-b border-neutral-800/80 bg-neutral-950/90">
-              <div className="flex flex-col gap-2 px-3 sm:px-4 pt-3 pb-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[0.7rem] tracking-[0.18em] uppercase text-neutral-500">
-                    Source
-                  </span>
-                  <div className="flex items-center gap-1.5 text-[0.7rem] text-neutral-500">
-                    <Clock className="h-3 w-3" />
-                    <span>Last change · Now</span>
+          {/* Body */}
+          <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
+            {/* LEFT PANE: Controls */}
+            <div className="w-full md:w-[52%] border-r border-neutral-800/80 overflow-y-auto bg-gradient-to-b from-neutral-950 via-neutral-950/98 to-neutral-950/96">
+              {/* Source controls */}
+              <div className="border-b border-neutral-800/80 bg-neutral-950/90">
+                <div className="flex flex-col gap-2 px-3 sm:px-4 pt-3 pb-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[0.7rem] tracking-[0.18em] uppercase text-neutral-500">
+                      Source
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[0.7rem] text-neutral-500">
+                      <Clock className="h-3 w-3" />
+                      <span>Last change · Now</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[0.7rem] font-mono">
-                  <button className="flex items-center justify-between gap-2 rounded-lg border border-neutral-800/90 bg-neutral-900/70 px-2.5 py-2 text-neutral-200 hover:border-neutral-700 hover:bg-neutral-900 transition-colors">
-                    <div className="flex items-center gap-1.5">
-                      <FileText className="h-4 w-4 text-neutral-400" />
-                      <span>Template</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-neutral-500" />
-                  </button>
-
-                  <button className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-neutral-800 bg-neutral-950/60 px-2.5 py-2 text-neutral-400 hover:border-neutral-700 hover:bg-neutral-900/80 hover:text-neutral-100 transition-colors">
-                    <div className="flex items-center gap-1.5">
-                      <Code2 className="h-4 w-4 text-neutral-500" />
-                      <span>HTML / JSX</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-neutral-600" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Layout section */}
-            <div className="border-b border-neutral-800/80">
-              <div className="px-3 sm:px-4 pt-3.5 pb-3 flex flex-col gap-3">
-                {/* Layout Type header */}
-                <div className="flex items-center gap-2">
-                  <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                    <ChevronDown className="h-3 w-3" />
-                    <span>Layout Type</span>
-                  </button>
-
-                  <div className="ml-auto flex items-center rounded-full border border-neutral-800 bg-neutral-900/70 p-[0.15rem] text-[0.7rem]">
-                    <button
-                      onClick={() => setPlatform("web")}
-                      className={cn(
-                        "px-2.5 py-0.5 rounded-full transition-colors",
-                        platform === "web"
-                          ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
-                          : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-                      )}
-                    >
-                      Web
+                  <div className="grid grid-cols-2 gap-2 text-[0.7rem] font-mono">
+                    <button className="flex items-center justify-between gap-2 rounded-lg border border-neutral-800/90 bg-neutral-900/70 px-2.5 py-2 text-neutral-200 hover:border-neutral-700 hover:bg-neutral-900 transition-colors">
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="h-4 w-4 text-neutral-400" />
+                        <span>Template</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-neutral-500" />
                     </button>
-                    <button
-                      onClick={() => setPlatform("mobile")}
-                      className={cn(
-                        "px-2.5 py-0.5 rounded-full transition-colors",
-                        platform === "mobile"
-                          ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
-                          : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-                      )}
-                    >
-                      Mobile
+
+                    <button className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-neutral-800 bg-neutral-950/60 px-2.5 py-2 text-neutral-400 hover:border-neutral-700 hover:bg-neutral-900/80 hover:text-neutral-100 transition-colors">
+                      <div className="flex items-center gap-1.5">
+                        <Code2 className="h-4 w-4 text-neutral-500" />
+                        <span>HTML / JSX</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-neutral-600" />
                     </button>
                   </div>
                 </div>
+              </div>
 
-                {/* Layout chips */}
-                <LayoutChips layoutType={layoutType} setLayoutType={setLayoutType} />
+              {/* Layout section */}
+              <div className="border-b border-neutral-800/80">
+                <div className="px-3 sm:px-4 pt-3.5 pb-3 flex flex-col gap-3">
+                  {/* Layout Type header */}
+                  <div className="flex items-center gap-2">
+                    <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                      <ChevronDown className="h-3 w-3" />
+                      <span>Layout Type</span>
+                    </button>
 
-                {/* Layout Configuration */}
-                <div className="flex flex-col gap-2 mt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                      Layout Configuration
-                    </span>
-                    <span className="text-[0.68rem] text-neutral-500">
-                      {layoutConfig ? layoutConfig : "None selected"}
-                    </span>
+                    <div className="ml-auto flex items-center rounded-full border border-neutral-800 bg-neutral-900/70 p-[0.15rem] text-[0.7rem]">
+                      <button
+                        onClick={() => setPlatform("web")}
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full transition-colors",
+                          platform === "web"
+                            ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                        )}
+                      >
+                        Web
+                      </button>
+                      <button
+                        onClick={() => setPlatform("mobile")}
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full transition-colors",
+                          platform === "mobile"
+                            ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                        )}
+                      >
+                        Mobile
+                      </button>
+                    </div>
                   </div>
 
-                  <LayoutConfigChips layoutConfig={layoutConfig} setLayoutConfig={setLayoutConfig} />
-                </div>
+                  {/* Layout chips */}
+                  <LayoutChips layoutType={layoutType} setLayoutType={setLayoutType} />
 
-                {/* Framing */}
-                <div className="flex flex-col gap-2 mt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                      Framing
-                    </span>
-                    <span className="text-[0.68rem] text-neutral-500">
-                      {framing ? framing : "None selected"}
-                    </span>
+                  {/* Layout Configuration */}
+                  <div className="flex flex-col gap-2 mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                        Layout Configuration
+                      </span>
+                      <span className="text-[0.68rem] text-neutral-500">
+                        {layoutConfig ? layoutConfig : "None selected"}
+                      </span>
+                    </div>
+
+                    <LayoutConfigChips layoutConfig={layoutConfig} setLayoutConfig={setLayoutConfig} />
                   </div>
 
-                  <FramingChips framing={framing} setFraming={setFraming} />
+                  {/* Framing */}
+                  <div className="flex flex-col gap-2 mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                        Framing
+                      </span>
+                      <span className="text-[0.68rem] text-neutral-500">
+                        {framing ? framing : "None selected"}
+                      </span>
+                    </div>
+
+                    <FramingChips framing={framing} setFraming={setFraming} />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Style & Theme */}
-            <div className="border-b border-neutral-800/80">
-              <div className="px-3 sm:px-4 pt-3.5 pb-3 flex flex-col gap-4">
-                {/* Style */}
+              {/* Style & Theme */}
+              <div className="border-b border-neutral-800/80">
+                <div className="px-3 sm:px-4 pt-3.5 pb-3 flex flex-col gap-4">
+                  {/* Style */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                        <ChevronDown className="h-3 w-3" />
+                        <span>Style</span>
+                      </button>
+                      <span className="text-[0.68rem] text-neutral-500">
+                        {style} · Subtle
+                      </span>
+                    </div>
+
+                    <StyleChips style={style} setStyle={setStyle} />
+                  </div>
+
+                  {/* Theme */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                        Theme
+                      </span>
+                      <div className="flex items-center gap-2 text-[0.68rem] text-neutral-500">
+                        {theme === "dark" ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}
+                        <span>{theme === "dark" ? "Dark" : "Light"}</span>
+                      </div>
+                    </div>
+
+                    <ThemeChips theme={theme} setTheme={setTheme} />
+                  </div>
+
+                  {/* Accent Color */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                        Accent
+                      </span>
+                      <span className={cn(
+                        "text-[0.68rem]",
+                        accent === "emerald" && "text-emerald-300",
+                        accent === "sky" && "text-sky-300",
+                        accent === "indigo" && "text-indigo-300",
+                        accent === "fuchsia" && "text-fuchsia-300"
+                      )}>
+                        {accent.charAt(0).toUpperCase() + accent.slice(1)}
+                      </span>
+                    </div>
+
+                    <AccentChips accent={accent} setAccent={setAccent} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Typography & Animation */}
+              <div className="px-3 sm:px-4 pt-3.5 pb-6 flex flex-col gap-4">
+                {/* Typeface Family */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
                       <ChevronDown className="h-3 w-3" />
-                      <span>Style</span>
+                      <span>Typeface</span>
                     </button>
-                    <span className="text-[0.68rem] text-neutral-500">
-                      {style} · Subtle
+                    <span className="text-[0.68rem] text-neutral-400">
+                      {typeface === "sans" ? "Inter · System" : typeface === "serif" ? "Serif" : "Monospace"}
                     </span>
                   </div>
 
-                  <StyleChips style={style} setStyle={setStyle} />
+                  <TypefaceChips typeface={typeface} setTypeface={setTypeface} />
                 </div>
 
-                {/* Theme */}
+                {/* Animation Type */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                      Theme
-                    </span>
-                    <div className="flex items-center gap-2 text-[0.68rem] text-neutral-500">
-                      {theme === "dark" ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}
-                      <span>{theme === "dark" ? "Dark" : "Light"}</span>
+                    <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
+                      <ChevronDown className="h-3 w-3" />
+                      <span>Animation</span>
+                    </button>
+                    <span className="text-[0.68rem] text-neutral-400">Multi-select</span>
+                  </div>
+
+                  <AnimationChips animations={animations} toggleAnimation={toggleAnimation} />
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT PANE: Preview + Generated Prompts OR Component Generation */}
+            <div className="w-full md:w-[48%] flex flex-col bg-neutral-950/95">
+              {builderMode === "generate" ? (
+                /* GENERATE MODE */
+                <>
+                  {/* Preview/Code Toggle */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800/80 bg-neutral-950/90">
+                    <div className="flex items-center rounded-full border border-neutral-700 bg-neutral-900/80 p-[0.15rem] text-[0.7rem]">
+                      <button
+                        onClick={() => setPreviewMode("preview")}
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full transition-colors flex items-center gap-1",
+                          previewMode === "preview"
+                            ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                        )}
+                      >
+                        <Eye className="h-3 w-3" />
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => setPreviewMode("code")}
+                        className={cn(
+                          "px-2.5 py-0.5 rounded-full transition-colors flex items-center gap-1",
+                          previewMode === "code"
+                            ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                        )}
+                      >
+                        <FileCode className="h-3 w-3" />
+                        Code
+                      </button>
                     </div>
-                  </div>
 
-                  <ThemeChips theme={theme} setTheme={setTheme} />
-                </div>
-
-                {/* Accent Color */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                      Accent
-                    </span>
-                    <span className={cn(
-                      "text-[0.68rem]",
-                      accent === "emerald" && "text-emerald-300",
-                      accent === "sky" && "text-sky-300",
-                      accent === "indigo" && "text-indigo-300",
-                      accent === "fuchsia" && "text-fuchsia-300"
-                    )}>
-                      {accent.charAt(0).toUpperCase() + accent.slice(1)}
-                    </span>
-                  </div>
-
-                  <AccentChips accent={accent} setAccent={setAccent} />
-                </div>
-              </div>
-            </div>
-
-            {/* Typography & Animation */}
-            <div className="px-3 sm:px-4 pt-3.5 pb-6 flex flex-col gap-4">
-              {/* Typeface Family */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                    <ChevronDown className="h-3 w-3" />
-                    <span>Typeface</span>
-                  </button>
-                  <span className="text-[0.68rem] text-neutral-400">
-                    {typeface === "sans" ? "Inter · System" : typeface === "serif" ? "Serif" : "Monospace"}
-                  </span>
-                </div>
-
-                <TypefaceChips typeface={typeface} setTypeface={setTypeface} />
-              </div>
-
-              {/* Animation Type */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <button className="inline-flex items-center gap-1 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                    <ChevronDown className="h-3 w-3" />
-                    <span>Animation</span>
-                  </button>
-                  <span className="text-[0.68rem] text-neutral-400">Multi-select</span>
-                </div>
-
-                <AnimationChips animations={animations} toggleAnimation={toggleAnimation} />
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT PANE: Preview + Generated Prompts OR Component Generation */}
-          <div className="w-full md:w-[48%] flex flex-col bg-neutral-950/95">
-            {builderMode === "generate" ? (
-              /* GENERATE MODE */
-              <>
-                {/* Preview/Code Toggle */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800/80 bg-neutral-950/90">
-                  <div className="flex items-center rounded-full border border-neutral-700 bg-neutral-900/80 p-[0.15rem] text-[0.7rem]">
-                    <button
-                      onClick={() => setPreviewMode("preview")}
-                      className={cn(
-                        "px-2.5 py-0.5 rounded-full transition-colors flex items-center gap-1",
-                        previewMode === "preview"
-                          ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
-                          : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-                      )}
+                    <Button
+                      onClick={handleGenerateComponent}
+                      disabled={isGenerating}
+                      className="h-7 px-3 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-[0.7rem] font-semibold rounded-full shadow-lg shadow-emerald-500/20"
                     >
-                      <Eye className="h-3 w-3" />
-                      Preview
-                    </button>
-                    <button
-                      onClick={() => setPreviewMode("code")}
-                      className={cn(
-                        "px-2.5 py-0.5 rounded-full transition-colors flex items-center gap-1",
-                        previewMode === "code"
-                          ? "bg-neutral-50 text-neutral-900 font-medium shadow-sm"
-                          : "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                      {isGenerating ? (
+                        <>
+                          <RotateCcw className="h-3 w-3 mr-1.5 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3 mr-1.5" />
+                          {generatedCode ? "Regenerate" : "Generate Component"}
+                        </>
                       )}
-                    >
-                      <FileCode className="h-3 w-3" />
-                      Code
-                    </button>
+                    </Button>
                   </div>
 
-                  <Button
-                    onClick={handleGenerateComponent}
-                    disabled={isGenerating}
-                    className="h-8 px-4 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-neutral-950 font-medium text-[0.75rem] rounded-full shadow-lg shadow-emerald-500/20"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <span className="h-3 w-3 mr-1.5 rounded-full border-2 border-neutral-950/30 border-t-neutral-950 animate-spin" />
-                        Generating...
-                      </>
+                  <div className="flex-1 overflow-hidden relative">
+                    {previewMode === "preview" ? (
+                      <LivePreview 
+                        code={generatedCode} 
+                        isLoading={isGenerating} 
+                        theme={theme}
+                      />
                     ) : (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                        Generate Component
-                      </>
+                      <CodePreview 
+                        code={generatedCode} 
+                        isLoading={isGenerating} 
+                      />
                     )}
-                  </Button>
-                </div>
+                  </div>
 
-                {/* Preview/Code Area */}
-                <div className="flex-1 overflow-hidden">
-                  {previewMode === "preview" ? (
-                    <LivePreview 
-                      code={generatedCode} 
-                      isLoading={isGenerating}
-                      theme={theme}
-                    />
-                  ) : (
-                    <CodePreview 
-                      code={generatedCode} 
-                      isLoading={isGenerating}
-                    />
-                  )}
-                </div>
-
-                {/* Refinement Chat */}
-                <RefinementChat
-                  onRefine={handleRefine}
-                  isLoading={isGenerating}
-                  disabled={!generatedCode}
-                />
-              </>
-            ) : (
-              /* PROMPT MODE */
-              <>
-                {/* Preview Area */}
-                <div className="hidden md:block h-[26.5rem] border-b border-neutral-800/80 bg-gradient-to-b from-neutral-950 to-neutral-900/95">
-                  <div className="h-full overflow-auto px-4 py-4">
-                    {/* Section: Layout preview */}
-                    <div className="relative mb-4">
-                      <div className="absolute -top-2 left-0 inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-950/90 px-2.5 py-0.5 text-[0.65rem] tracking-[0.18em] uppercase text-neutral-300">
-                        <LayoutTemplate className="h-3 w-3" />
-                        <span>Layout</span>
-                        <span className="text-neutral-500">· {layoutType} · {platform}</span>
-                      </div>
-                      <div className="mt-3 rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/70 p-3">
-                        <div className="h-52 rounded-xl border border-neutral-800 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 flex items-center justify-center text-[0.75rem] text-neutral-500">
-                          Layout preview coming from your selection
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section: Style / Typography preview */}
-                    <div className="relative mt-5 mb-3">
-                      <div className="h-[1px] bg-gradient-to-r from-transparent via-neutral-600 to-transparent"></div>
-                      <span className="absolute left-1/2 -top-2 -translate-x-1/2 rounded-full border border-neutral-800 bg-neutral-950 px-2.5 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-400">
-                        Typography & Style
-                      </span>
-                    </div>
-
-                    <div className="rounded-xl border border-neutral-800 bg-neutral-950/95 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.7)]">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[0.68rem] font-medium text-emerald-200">
-                          <Sparkles className="h-3 w-3" />
-                          <span>System-optimized prompt</span>
-                        </div>
-                        <span className="text-[0.68rem] text-neutral-500">
-                          Generated once you pick a layout
+                  {/* AI Refinement Chat */}
+                  <RefinementChat 
+                    onRefine={handleRefine}
+                    isLoading={isGenerating}
+                    disabled={!generatedCode}
+                    context={{ theme, layoutType }}
+                  />
+                </>
+              ) : (
+                /* PROMPT MODE */
+                <>
+                  {/* Generated Prompts List */}
+                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Wand2 className="h-4 w-4 text-emerald-400" />
+                        <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">
+                          Generated Prompt
                         </span>
                       </div>
-
-                      <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-neutral-50 mb-1.5">
-                        Design your UI prompt like a real interface
-                      </h1>
-
-                      <h2 className="text-base md:text-lg font-medium text-neutral-300 mb-2.5">
-                        Combine layout, visual style and motion into a single, precise instruction for your model.
-                      </h2>
-
-                      <p className="text-sm md:text-[0.95rem] text-neutral-400 mb-3 leading-relaxed">
-                        Use the controls on the left to configure structure, framing, theme, typography and animations. This
-                        panel shows how the system will interpret your selections before turning them into a prompt.
-                      </p>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <Button
-                          onClick={handleAddToMainPrompt}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-neutral-50 px-3.5 py-1.5 text-[0.8rem] font-medium text-neutral-900 hover:bg-neutral-200 transition-colors"
-                        >
-                          <Wand2 className="h-4 w-4" />
-                          Generate prompt text
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => navigator.clipboard.writeText(getSelectedPromptsText())}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-neutral-600 px-3 py-1.5 text-[0.8rem] font-medium text-neutral-300 hover:border-neutral-400 hover:text-neutral-100 transition-colors"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy as instruction
-                        </Button>
-                      </div>
+                      <button 
+                        onClick={selectAllPrompts}
+                        className="text-[0.65rem] text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                      >
+                        Select All
+                      </button>
                     </div>
 
-                    {/* Section: Animation preview */}
-                    <div className="relative mt-5 mb-3">
-                      <div className="h-[1px] bg-gradient-to-r from-transparent via-neutral-600 to-transparent"></div>
-                      <span className="absolute left-1/2 -top-2 -translate-x-1/2 rounded-full border border-neutral-800 bg-neutral-950 px-2.5 text-[0.68rem] tracking-[0.18em] uppercase text-neutral-400">
-                        Animation Preview
-                      </span>
-                    </div>
-
-                    <div className="relative rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/70 p-3">
-                      <div className="absolute -top-2 left-0 inline-flex items-center gap-1 rounded-full border border-neutral-800 bg-neutral-950 px-2.5 py-0.5 text-[0.65rem] tracking-[0.18em] uppercase text-neutral-300">
-                        <PlayCircle className="h-3 w-3" />
-                        <span>Animation</span>
-                        <span className="text-neutral-500">· {animations.length > 0 ? animations.join(", ") : "None"}</span>
-                      </div>
-                      <div className="mt-3 flex h-44 items-center justify-center text-[0.75rem] text-neutral-500">
-                        {animations.length > 0 ? (
-                          <div className="flex gap-4">
-                            {animations.includes("fade") && (
-                              <div className="h-8 w-12 rounded-md bg-neutral-500/80 animate-pulse"></div>
-                            )}
-                            {animations.includes("slide") && (
-                              <div className="h-8 w-12 rounded-md bg-neutral-500/80 animate-bounce"></div>
-                            )}
-                            {animations.includes("scale") && (
-                              <div className="h-8 w-12 rounded-md bg-neutral-500/80 animate-ping"></div>
-                            )}
+                    {generatedPrompts.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => togglePromptSelection(p.id)}
+                        className={cn(
+                          "group text-left p-3 rounded-xl border transition-all relative overflow-hidden",
+                          selectedPromptIds.includes(p.id)
+                            ? "border-emerald-500/40 bg-emerald-500/5 shadow-[0_4px_20px_rgba(16,185,129,0.08)]"
+                            : "border-neutral-800/80 bg-neutral-900/40 hover:border-neutral-700/80 hover:bg-neutral-900/60"
+                        )}
+                      >
+                        <div className="flex flex-col gap-1.5 relative z-10">
+                          <span className={cn(
+                            "text-[0.6rem] font-bold tracking-widest uppercase",
+                            selectedPromptIds.includes(p.id) ? "text-emerald-400" : "text-neutral-500"
+                          )}>
+                            {p.category}
+                          </span>
+                          <p className={cn(
+                            "text-[0.75rem] leading-relaxed",
+                            selectedPromptIds.includes(p.id) ? "text-neutral-100" : "text-neutral-400"
+                          )}>
+                            {p.text}
+                          </p>
+                        </div>
+                        {selectedPromptIds.includes(p.id) && (
+                          <div className="absolute top-2 right-2">
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
                           </div>
+                        )}
+                      </button>
+                    ))}
+
+                    <div className="mt-3 rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/70 p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <PlusCircle className="h-3.5 w-3.5 text-neutral-500" />
+                        <span className="text-[0.65rem] font-bold tracking-wider uppercase text-neutral-500">
+                          Add Custom Instruction
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customPrompt}
+                          onChange={(e) => setCustomPrompt(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && addCustomPrompt()}
+                          placeholder="e.g. Add a glassmorphism contact form..."
+                          className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-1.5 text-[0.75rem] text-neutral-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                        />
+                        <Button 
+                          size="icon" 
+                          onClick={addCustomPrompt}
+                          className="h-8 w-8 bg-neutral-800 hover:bg-neutral-700 text-neutral-200"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Final Prompt Preview */}
+                  <div className="mt-auto border-t border-neutral-800/90 bg-neutral-950/80 p-4 backdrop-blur-md">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[0.65rem] font-bold tracking-widest uppercase text-neutral-500">
+                          Final Prompt Preview
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={() => navigator.clipboard.writeText(getSelectedPromptsText())}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 text-[0.6rem] hover:text-neutral-200 transition-colors"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="min-h-[60px] max-h-[120px] overflow-y-auto p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/80 text-[0.75rem] text-neutral-300 italic leading-relaxed">
+                        {selectedPromptIds.length > 0 ? (
+                          getSelectedPromptsText()
                         ) : (
-                          "Choose animation types to see a motion preview here."
+                          <span className="text-neutral-600">Select options from the left to build your prompt...</span>
                         )}
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Generated Prompts */}
-                <div className="flex-1 overflow-y-auto bg-neutral-950/98 px-3.5 sm:px-4 py-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[0.68rem] tracking-[0.18em] uppercase text-neutral-500">
-                        Generated Prompts
-                      </p>
-                      <span className="text-[0.68rem] text-emerald-400">
-                        {selectedPromptIds.length}/{generatedPrompts.length} selected
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        onClick={selectAllPrompts}
-                        className="h-7 px-2 text-[0.68rem] text-neutral-400 hover:text-neutral-200"
-                      >
-                        Select all
-                      </Button>
-                      <Button
-                        onClick={handleAddToMainPrompt}
-                        disabled={selectedPromptIds.length === 0}
-                        className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-3 py-1.5 text-[0.75rem] font-medium text-neutral-950 shadow-[0_0_0_1px_rgba(22,163,74,0.35)] hover:bg-emerald-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add to main prompt
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Custom prompt entry */}
-                  <div className="mb-3">
-                    <div className="group rounded-lg border border-neutral-800 bg-neutral-950/80 p-2 text-[0.75rem] font-mono text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-neutral-600 hover:bg-neutral-900/80 transition-colors">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 flex-1">
-                          <div className="h-3 w-3 rounded-full border border-neutral-600 bg-neutral-950 flex-shrink-0"></div>
-                          <input
-                            type="text"
-                            placeholder="Add custom instruction…"
-                            value={customPrompt}
-                            onChange={(e) => setCustomPrompt(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") addCustomPrompt();
-                            }}
-                            className="bg-transparent border-none outline-none flex-1 text-neutral-300 placeholder:text-neutral-400"
-                          />
-                        </div>
-                        <button
-                          onClick={addCustomPrompt}
-                          className="inline-flex items-center gap-1 text-[0.72rem] font-semibold text-emerald-400 hover:text-emerald-300"
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setBuilderMode("generate")}
+                          className="flex-1 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-neutral-100 h-10 font-medium"
                         >
-                          <PlusCircle className="h-4 w-4" />
-                          Add
-                        </button>
+                          <PlayCircle className="h-4 w-4 mr-2" />
+                          Try Generating
+                        </Button>
+                        <Button
+                          onClick={handleAddToMainPrompt}
+                          disabled={selectedPromptIds.length === 0}
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 h-10 font-bold shadow-lg shadow-emerald-500/20"
+                        >
+                          <LayoutTemplate className="h-4 w-4 mr-2" />
+                          Use Prompt
+                        </Button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Dynamic Prompt list based on selections */}
-                  <div className="space-y-2 text-[0.75rem] font-mono">
-                    {generatedPrompts.map((prompt) => {
-                      const isSelected = selectedPromptIds.includes(prompt.id);
-                      return (
-                        <div
-                          key={prompt.id}
-                          className={cn(
-                            "rounded-lg border bg-neutral-950/80 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-neutral-600 hover:bg-neutral-900/80 transition-colors cursor-pointer",
-                            isSelected
-                              ? "border-emerald-500/40 bg-emerald-500/5"
-                              : "border-neutral-800"
-                          )}
-                          onClick={() => togglePromptSelection(prompt.id)}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-start gap-1.5 flex-1">
-                              <div className={cn(
-                                "h-4 w-4 rounded-full border flex-shrink-0 flex items-center justify-center mt-0.5 transition-colors",
-                                isSelected
-                                  ? "border-emerald-500 bg-emerald-500"
-                                  : "border-neutral-600 bg-neutral-950"
-                              )}>
-                                {isSelected && <Check className="h-2.5 w-2.5 text-neutral-950" />}
-                              </div>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-[0.6rem] uppercase tracking-wider text-emerald-400/80">
-                                  {prompt.category}
-                                </span>
-                                <span className={cn(
-                                  "text-neutral-300 leading-relaxed",
-                                  isSelected && "text-neutral-200"
-                                )}>
-                                  {prompt.text}
-                                </span>
-                              </div>
-                            </div>
-                            <button 
-                              className={cn(
-                                "inline-flex items-center gap-1 text-[0.72rem] font-semibold transition-colors flex-shrink-0",
-                                isSelected 
-                                  ? "text-emerald-300" 
-                                  : "text-emerald-400 hover:text-emerald-300"
-                              )}
-                            >
-                              {isSelected ? (
-                                <>
-                                  <Check className="h-4 w-4" />
-                                  Added
-                                </>
-                              ) : (
-                                <>
-                                  <Plus className="h-4 w-4" />
-                                  Add
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </ErrorBoundary>
       </DialogContent>
     </Dialog>
   );
 }
 
 // Layout Type Chips Component
-function LayoutChips({ layoutType, setLayoutType }: { layoutType: LayoutType; setLayoutType: (t: LayoutType) => void }) {
-  const layouts: { type: LayoutType; label: string }[] = [
-    { type: "hero", label: "Hero" },
-    { type: "features", label: "Features" },
-    { type: "onboarding", label: "Onboarding" },
-    { type: "docs", label: "Docs" },
+function LayoutChips({ layoutType, setLayoutType }: { layoutType: LayoutType; setLayoutType: (l: LayoutType) => void }) {
+  const layouts: { type: LayoutType; label: string; icon: any }[] = [
+    { type: "hero", label: "Hero Section", icon: LayoutTemplate },
+    { type: "features", label: "Features Grid", icon: LayoutTemplate },
+    { type: "onboarding", label: "Onboarding", icon: LayoutTemplate },
+    { type: "docs", label: "Documentation", icon: LayoutTemplate },
   ];
 
   return (
-    <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        {layouts.map((layout) => (
-          <button
-            key={layout.type}
-            onClick={() => setLayoutType(layout.type)}
-            className={cn(
-              "relative flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
-              layoutType === layout.type
-                ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
-                : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
-            )}
-          >
-            <div className="relative mt-0.5 mb-1 w-[3.5rem] h-10">
-              <LayoutPreview type={layout.type} />
-            </div>
-            <span className={cn(
-              "text-[0.65rem]",
-              layoutType === layout.type ? "text-emerald-200" : "text-neutral-200"
-            )}>
-              {layout.label}
-            </span>
-            {layoutType === layout.type && (
-              <span className="absolute -top-1.5 right-1 rounded-full bg-emerald-500 text-[0.55rem] font-medium px-1.5 py-[0.03rem] text-neutral-950 shadow-sm">
-                Active
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+    <div className="grid grid-cols-2 gap-2">
+      {layouts.map((l) => (
+        <button
+          key={l.type}
+          onClick={() => setLayoutType(l.type)}
+          className={cn(
+            "flex flex-col items-start gap-1 p-2.5 rounded-xl border transition-all",
+            layoutType === l.type
+              ? "border-emerald-500/40 bg-emerald-500/5 shadow-[0_4px_20px_rgba(16,185,129,0.05)]"
+              : "border-neutral-800 bg-neutral-900/40 hover:border-neutral-700"
+          )}
+        >
+          <div className={cn(
+            "p-1.5 rounded-lg",
+            layoutType === l.type ? "bg-emerald-500/10 text-emerald-400" : "bg-neutral-800 text-neutral-500"
+          )}>
+            <l.icon className="h-4 w-4" />
+          </div>
+          <span className={cn(
+            "text-[0.7rem] font-medium mt-0.5",
+            layoutType === l.type ? "text-emerald-100" : "text-neutral-400"
+          )}>
+            {l.label}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
 
-// Layout Preview Mini Component
-function LayoutPreview({ type }: { type: LayoutType }) {
-  switch (type) {
-    case "hero":
-      return (
-        <div className="w-full h-full rounded-md bg-neutral-900/90 border border-neutral-700/80 shadow-sm">
-          <div className="h-[34%] rounded-t-md bg-neutral-800/90"></div>
-          <div className="h-[66%] flex flex-col gap-[0.12rem] p-[0.18rem]">
-            <div className="h-[42%] rounded-sm bg-neutral-700/80"></div>
-            <div className="flex gap-[0.12rem] h-[34%]">
-              <div className="flex-1 rounded-sm bg-neutral-700/70"></div>
-              <div className="flex-1 rounded-sm bg-neutral-800/80"></div>
-            </div>
-            <div className="h-[18%] rounded-sm bg-neutral-800/70"></div>
-          </div>
-        </div>
-      );
-    case "features":
-      return (
-        <div className="w-full h-full rounded-md bg-neutral-900/90 border border-neutral-700/80">
-          <div className="h-[26%] rounded-t-md bg-neutral-800/90"></div>
-          <div className="h-[74%] flex gap-[0.12rem] p-[0.18rem]">
-            <div className="flex-1 rounded-sm bg-neutral-700/80"></div>
-            <div className="flex-1 rounded-sm bg-neutral-800/80"></div>
-            <div className="flex-1 rounded-sm bg-neutral-700/80"></div>
-          </div>
-        </div>
-      );
-    case "onboarding":
-      return (
-        <div className="w-full h-full rounded-md bg-neutral-900/90 border border-neutral-700/80">
-          <div className="flex h-full gap-[0.12rem] p-[0.18rem]">
-            <div className="flex-1 flex flex-col gap-[0.12rem]">
-              <div className="h-[22%] rounded-sm bg-neutral-800/90"></div>
-              <div className="flex-1 rounded-sm bg-neutral-700/70"></div>
-            </div>
-            <div className="w-[42%] flex flex-col gap-[0.12rem]">
-              <div className="h-[38%] rounded-sm bg-neutral-700/90"></div>
-              <div className="h-[28%] rounded-sm bg-neutral-800/70"></div>
-              <div className="h-[28%] rounded-sm bg-neutral-800/80"></div>
-            </div>
-          </div>
-        </div>
-      );
-    case "docs":
-      return (
-        <div className="w-full h-full rounded-md bg-neutral-900/90 border border-neutral-700/80 flex gap-[0.12rem] p-[0.18rem]">
-          <div className="w-[30%] flex flex-col gap-[0.08rem]">
-            <div className="h-3 rounded-sm bg-neutral-800/90"></div>
-            <div className="h-2 rounded-sm bg-neutral-800/70"></div>
-            <div className="h-2 rounded-sm bg-neutral-700/80"></div>
-            <div className="h-2 rounded-sm bg-neutral-800/60"></div>
-          </div>
-          <div className="flex-1 flex flex-col gap-[0.12rem]">
-            <div className="h-[42%] rounded-sm bg-neutral-800/80"></div>
-            <div className="flex-1 rounded-sm bg-neutral-700/70"></div>
-          </div>
-        </div>
-      );
-    default:
-      return null;
-  }
-}
-
-// Layout Config Chips
-function LayoutConfigChips({ layoutConfig, setLayoutConfig }: { layoutConfig: LayoutConfig | null; setLayoutConfig: (c: LayoutConfig | null) => void }) {
+// Layout Config Chips Component
+function LayoutConfigChips({ layoutConfig, setLayoutConfig }: { layoutConfig: LayoutConfig | null; setLayoutConfig: (l: LayoutConfig | null) => void }) {
   const configs: { type: LayoutConfig; label: string }[] = [
-    { type: "card", label: "Card" },
-    { type: "list", label: "List" },
-    { type: "grid", label: "Grid" },
+    { type: "card", label: "Card Layout" },
+    { type: "list", label: "List Layout" },
+    { type: "grid", label: "Grid Layout" },
   ];
 
   return (
-    <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        {configs.map((config) => (
-          <button
-            key={config.type}
-            onClick={() => setLayoutConfig(layoutConfig === config.type ? null : config.type)}
-            className={cn(
-              "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
-              layoutConfig === config.type
-                ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
-                : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
-            )}
-          >
-            <div className="mt-0.5 mb-1 flex h-9 w-[3.5rem] items-center justify-center">
-              <LayoutConfigPreview type={config.type} />
-            </div>
-            <span className={cn(
-              "text-[0.65rem]",
-              layoutConfig === config.type ? "text-emerald-200" : "text-neutral-200"
-            )}>
-              {config.label}
-            </span>
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {configs.map((c) => (
+        <button
+          key={c.type}
+          onClick={() => setLayoutConfig(layoutConfig === c.type ? null : c.type)}
+          className={cn(
+            "px-3 py-1.5 rounded-lg border text-[0.7rem] transition-all",
+            layoutConfig === c.type
+              ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-200 shadow-sm"
+              : "border-neutral-800 bg-neutral-900/70 text-neutral-400 hover:border-neutral-700"
+          )}
+        >
+          {c.label}
+        </button>
+      ))}
     </div>
   );
 }
 
-function LayoutConfigPreview({ type }: { type: LayoutConfig }) {
-  switch (type) {
-    case "card":
-      return (
-        <div className="flex h-[2.25rem] w-[2.25rem] items-center justify-center">
-          <div className="h-[1.75rem] w-[2rem] rounded-md bg-neutral-800/90 border border-neutral-700 shadow-sm"></div>
-        </div>
-      );
-    case "list":
-      return (
-        <div className="flex h-[2.25rem] w-[2.25rem] flex-col justify-center gap-[0.12rem]">
-          <div className="h-[0.4rem] w-full rounded-sm bg-neutral-800/90"></div>
-          <div className="h-[0.4rem] w-[85%] rounded-sm bg-neutral-800/70"></div>
-          <div className="h-[0.4rem] w-full rounded-sm bg-neutral-800/90"></div>
-          <div className="h-[0.4rem] w-[70%] rounded-sm bg-neutral-800/70"></div>
-        </div>
-      );
-    case "grid":
-      return (
-        <div className="grid h-[2.25rem] w-[2.25rem] grid-cols-2 gap-[0.08rem]">
-          <div className="rounded-sm bg-neutral-800/90"></div>
-          <div className="rounded-sm bg-neutral-800/90"></div>
-          <div className="rounded-sm bg-neutral-800/90"></div>
-          <div className="rounded-sm bg-neutral-800/90"></div>
-        </div>
-      );
-    default:
-      return null;
-  }
-}
-
-// Framing Chips
+// Framing Chips Component
 function FramingChips({ framing, setFraming }: { framing: FramingType | null; setFraming: (f: FramingType | null) => void }) {
-  const framings: { type: FramingType; label: string }[] = [
+  const frames: { type: FramingType; label: string }[] = [
     { type: "fullscreen", label: "Full Screen" },
-    { type: "card", label: "Card" },
-    { type: "browser", label: "Browser" },
+    { type: "card", label: "Card Frame" },
+    { type: "browser", label: "Browser Mock" },
   ];
 
   return (
-    <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        {framings.map((f) => (
-          <button
-            key={f.type}
-            onClick={() => setFraming(framing === f.type ? null : f.type)}
-            className={cn(
-              "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
-              framing === f.type
-                ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
-                : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
-            )}
-          >
-            <div className="mt-0.5 mb-1 flex h-9 w-[3.5rem] items-center justify-center">
-              <FramingPreview type={f.type} />
-            </div>
-            <span className={cn(
-              "text-[0.65rem]",
-              framing === f.type ? "text-emerald-200" : "text-neutral-200"
-            )}>
-              {f.label}
-            </span>
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {frames.map((f) => (
+        <button
+          key={f.type}
+          onClick={() => setFraming(framing === f.type ? null : f.type)}
+          className={cn(
+            "px-3 py-1.5 rounded-lg border text-[0.7rem] transition-all",
+            framing === f.type
+              ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-200 shadow-sm"
+              : "border-neutral-800 bg-neutral-900/70 text-neutral-400 hover:border-neutral-700"
+          )}
+        >
+          {f.label}
+        </button>
+      ))}
     </div>
   );
 }
 
-function FramingPreview({ type }: { type: FramingType }) {
-  switch (type) {
-    case "fullscreen":
-      return <div className="h-[2.4rem] w-[3.1rem] rounded-sm bg-neutral-800/90 border border-neutral-700"></div>;
-    case "card":
-      return (
-        <div className="flex h-[2.4rem] w-[3.1rem] items-center justify-center rounded-sm bg-neutral-900 border border-neutral-700">
-          <div className="h-[1.65rem] w-[2.4rem] rounded-lg bg-neutral-800/95 border border-neutral-600"></div>
-        </div>
-      );
-    case "browser":
-      return (
-        <div className="h-[2.4rem] w-[3.1rem] rounded-md bg-neutral-850 border border-neutral-700 flex flex-col">
-          <div className="h-[22%] flex items-center gap-[0.12rem] px-[0.22rem]">
-            <div className="h-[0.55rem] w-[0.9rem] rounded-sm bg-neutral-700/90"></div>
-            <div className="h-[0.4rem] flex-1 rounded-sm bg-neutral-800/90"></div>
-          </div>
-          <div className="flex-1 bg-neutral-900/90 rounded-b-md border-t border-neutral-800"></div>
-        </div>
-      );
-    default:
-      return null;
-  }
-}
-
-// Style Chips
+// Style Chips Component
 function StyleChips({ style, setStyle }: { style: StyleType; setStyle: (s: StyleType) => void }) {
   const styles: { type: StyleType; label: string }[] = [
     { type: "flat", label: "Flat" },
@@ -1080,173 +838,134 @@ function StyleChips({ style, setStyle }: { style: StyleType; setStyle: (s: Style
   ];
 
   return (
-    <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        {styles.map((s) => (
-          <button
-            key={s.type}
-            onClick={() => setStyle(s.type)}
-            className={cn(
-              "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
-              style === s.type
-                ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
-                : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
-            )}
-          >
-            <div className="mt-0.5 mb-1 flex h-9 w-[3.5rem] items-center justify-center">
-              <StylePreview type={s.type} />
-            </div>
-            <span className={cn(
-              "text-[0.65rem]",
-              style === s.type ? "text-emerald-200" : "text-neutral-200"
-            )}>
-              {s.label}
-            </span>
-          </button>
-        ))}
-      </div>
+    <div className="grid grid-cols-3 gap-2">
+      {styles.map((s) => (
+        <button
+          key={s.type}
+          onClick={() => setStyle(s.type)}
+          className={cn(
+            "flex flex-col items-center gap-2 p-2.5 rounded-xl border transition-all",
+            style === s.type
+              ? "border-emerald-500/40 bg-emerald-500/5 shadow-sm"
+              : "border-neutral-800 bg-neutral-900/70 hover:border-neutral-700"
+          )}
+        >
+          <div className={cn(
+            "h-8 w-12 rounded-lg border-2",
+            s.type === "flat" && "bg-emerald-500/20 border-emerald-500/40",
+            s.type === "outline" && "border-emerald-500/40 border-dashed",
+            s.type === "glass" && "bg-white/10 backdrop-blur-sm border-white/20"
+          )} />
+          <span className={cn(
+            "text-[0.65rem] font-medium",
+            style === s.type ? "text-emerald-200" : "text-neutral-400"
+          )}>
+            {s.label}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
 
-function StylePreview({ type }: { type: StyleType }) {
-  switch (type) {
-    case "flat":
-      return (
-        <div className="flex h-9 w-[3.5rem] flex-col gap-[0.14rem]">
-          <div className="h-[32%] rounded-md bg-neutral-800/90"></div>
-          <div className="h-[22%] rounded-md bg-neutral-800/70"></div>
-          <div className="h-[22%] rounded-md bg-neutral-800/60"></div>
-        </div>
-      );
-    case "outline":
-      return <div className="h-[2.2rem] w-[3rem] rounded-md border border-dashed border-neutral-600 bg-neutral-900/60"></div>;
-    case "glass":
-      return <div className="h-[2.2rem] w-[3rem] rounded-2xl border border-neutral-600/70 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 shadow-[0_18px_50px_rgba(0,0,0,0.8)]"></div>;
-    default:
-      return null;
-  }
-}
-
-// Theme Chips
+// Theme Chips Component
 function ThemeChips({ theme, setTheme }: { theme: ThemeType; setTheme: (t: ThemeType) => void }) {
   return (
-    <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        <button
-          onClick={() => setTheme("light")}
-          className={cn(
-            "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
-            theme === "light"
-              ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
-              : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
-          )}
-        >
-          <div className="mt-0.5 mb-1 flex h-9 w-[3.5rem] items-center justify-center">
-            <div className="relative h-[2.2rem] w-[3rem] rounded-md bg-white border border-neutral-200 flex items-center justify-center">
-              <Sun className="h-4 w-4 text-amber-400" />
-            </div>
-          </div>
-          <span className={cn("text-[0.65rem]", theme === "light" ? "text-emerald-200" : "text-neutral-200")}>
-            Light
-          </span>
-        </button>
-
-        <button
-          onClick={() => setTheme("dark")}
-          className={cn(
-            "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
-            theme === "dark"
-              ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
-              : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
-          )}
-        >
-          <div className="mt-0.5 mb-1 flex h-9 w-[3.5rem] items-center justify-center">
-            <div className="relative h-[2.2rem] w-[3rem] rounded-md bg-neutral-900 border border-neutral-700 flex items-center justify-center">
-              <Moon className="h-4 w-4 text-neutral-50" />
-            </div>
-          </div>
-          <span className={cn("text-[0.65rem]", theme === "dark" ? "text-emerald-200" : "text-neutral-200")}>
-            Dark
-          </span>
-        </button>
-      </div>
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        onClick={() => setTheme("dark")}
+        className={cn(
+          "flex items-center gap-3 p-2.5 rounded-xl border transition-all",
+          theme === "dark"
+            ? "border-emerald-500/40 bg-emerald-500/5"
+            : "border-neutral-800 bg-neutral-900/70 hover:border-neutral-700"
+        )}
+      >
+        <div className="h-4 w-4 rounded-full bg-neutral-950 border border-neutral-700 shadow-inner" />
+        <span className={cn(
+          "text-[0.7rem] font-medium",
+          theme === "dark" ? "text-emerald-100" : "text-neutral-400"
+        )}>
+          Dark Mode
+        </span>
+      </button>
+      <button
+        onClick={() => setTheme("light")}
+        className={cn(
+          "flex items-center gap-3 p-2.5 rounded-xl border transition-all",
+          theme === "light"
+            ? "border-emerald-500/40 bg-emerald-500/5"
+            : "border-neutral-800 bg-neutral-900/70 hover:border-neutral-700"
+        )}
+      >
+        <div className="h-4 w-4 rounded-full bg-neutral-100 border border-neutral-300" />
+        <span className={cn(
+          "text-[0.7rem] font-medium",
+          theme === "light" ? "text-emerald-100" : "text-neutral-400"
+        )}>
+          Light Mode
+        </span>
+      </button>
     </div>
   );
 }
 
-// Accent Chips
+// Accent Color Chips Component
 function AccentChips({ accent, setAccent }: { accent: AccentColor; setAccent: (a: AccentColor) => void }) {
-  const accents: { type: AccentColor; label: string; color: string }[] = [
-    { type: "emerald", label: "Em", color: "bg-emerald-400" },
-    { type: "sky", label: "Sky", color: "bg-sky-400" },
-    { type: "indigo", label: "In", color: "bg-indigo-400" },
-    { type: "fuchsia", label: "Fu", color: "bg-fuchsia-400" },
+  const colors: { type: AccentColor; color: string }[] = [
+    { type: "emerald", color: "bg-emerald-500" },
+    { type: "sky", color: "bg-sky-500" },
+    { type: "indigo", color: "bg-indigo-500" },
+    { type: "fuchsia", color: "bg-fuchsia-500" },
   ];
 
   return (
-    <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        {accents.map((a) => (
-          <button
-            key={a.type}
-            onClick={() => setAccent(a.type)}
-            className={cn(
-              "flex w-16 flex-col items-center gap-1 rounded-lg px-1.5 py-1.5 transition-colors",
-              accent === a.type
-                ? "border border-emerald-500/60 bg-neutral-900/90 shadow-[0_0_0_1px_rgba(16,185,129,0.22)]"
-                : "border border-neutral-800 bg-neutral-900/80 hover:border-neutral-700 hover:bg-neutral-900"
-            )}
-          >
-            <span className={cn(
-              "flex h-4 w-4 items-center justify-center rounded-full",
-              a.color,
-              accent === a.type && "shadow-[0_0_18px_rgba(16,185,129,0.8)]"
-            )}></span>
-            <span className={cn(
-              "text-[0.65rem]",
-              accent === a.type ? "text-emerald-200" : "text-neutral-200"
-            )}>
-              {a.label}
-            </span>
-          </button>
-        ))}
-      </div>
+    <div className="flex justify-between items-center px-1">
+      {colors.map((c) => (
+        <button
+          key={c.type}
+          onClick={() => setAccent(c.type)}
+          className={cn(
+            "h-8 w-8 rounded-full flex items-center justify-center transition-all p-0.5",
+            accent === c.type ? "ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-neutral-950" : "hover:scale-110"
+          )}
+        >
+          <div className={cn("h-full w-full rounded-full shadow-lg", c.color)} />
+        </button>
+      ))}
     </div>
   );
 }
 
-// Typeface Chips
+// Typeface Chips Component
 function TypefaceChips({ typeface, setTypeface }: { typeface: TypefaceType; setTypeface: (t: TypefaceType) => void }) {
-  const typefaces: { type: TypefaceType; label: string }[] = [
-    { type: "sans", label: "Sans" },
-    { type: "serif", label: "Serif" },
-    { type: "mono", label: "Mono" },
+  const types: { type: TypefaceType; label: string; preview: string }[] = [
+    { type: "sans", label: "Sans Serif", preview: "Aa" },
+    { type: "serif", label: "Serif", preview: "Aa" },
+    { type: "mono", label: "Monospace", preview: "Aa" },
   ];
 
   return (
     <div className="overflow-x-auto pb-1.5">
-      <div className="flex gap-2.5 min-w-max text-[0.7rem]">
-        {typefaces.map((t) => (
+      <div className="flex gap-2.5 min-w-max">
+        {types.map((t) => (
           <button
             key={t.type}
             onClick={() => setTypeface(t.type)}
             className={cn(
-              "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1.5 transition-colors",
+              "flex w-20 flex-col items-center rounded-lg px-1.5 pb-1.5 pt-1 transition-colors",
               typeface === t.type
                 ? "border border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]"
                 : "border border-neutral-800 bg-neutral-900/70 hover:border-neutral-700 hover:bg-neutral-900"
             )}
           >
-            <div className="mt-0.5 mb-1 flex h-9 w-[3.5rem] items-center justify-center">
-              <span className={cn(
-                "text-[0.9rem] tracking-tight",
-                t.type === "sans" && "font-semibold font-sans",
-                t.type === "serif" && "italic font-serif",
-                t.type === "mono" && "font-mono text-[0.8rem]"
-              )}>
-                Aa
-              </span>
+            <div className={cn(
+              "mt-0.5 flex h-9 w-[3.5rem] items-center justify-center text-lg",
+              t.type === "sans" && "font-sans",
+              t.type === "serif" && "font-serif",
+              t.type === "mono" && "font-mono"
+            )}>
+              {t.preview}
             </div>
             <span className={cn(
               "text-[0.65rem]",

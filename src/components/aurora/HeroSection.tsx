@@ -42,8 +42,8 @@ export function HeroSection() {
     }
   };
 
-  const handleHistorySelect = (item: typeof history[0]) => {
-    setInputValue(item.enhanced_content);
+  const handleHistorySelect = (item: any) => {
+    setInputValue(item.enhancedContent);
     setSelectedMode(item.mode);
   };
 
@@ -110,7 +110,7 @@ export function HeroSection() {
       {showError && (
         <ErrorState 
           error={error}
-          errorType={errorType}
+          errorType={errorType as any}
           onRetry={retry}
           retryCount={retryCount}
         />

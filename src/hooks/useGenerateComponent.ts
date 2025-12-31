@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
 export interface ComponentConfig {
@@ -23,19 +23,36 @@ export function useGenerateComponent() {
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refek a renderelések elkerülésére a logikában
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const generateComponent = useCallback(async (
     config: ComponentConfig,
     refinement?: RefinementRequest
   ) => {
+    // 1. Előző kérés megszakítása, ha van folyamatban
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsGenerating(true);
     setError(null);
     
+    // UI döntés: Ha nem finomítás (refinement), töröljük a kódot.
+    // Ha finomítás, megtartjuk a régit amíg be nem indul az új stream, vagy töröljük ízlés szerint.
     if (!refinement) {
       setGeneratedCode("");
     }
 
     const GENERATE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-component`;
+    
+    let accumulatedCode = refinement ? "" : ""; // Ha refinement, akkor is nulláról építjük az választ, nem appendelünk
+    let lastUpdateTime = 0;
+    const UPDATE_INTERVAL = 50; // ms - Ennyi időnként frissítjük a UI-t maximum
 
     try {
       const response = await fetch(GENERATE_URL, {
@@ -45,126 +62,123 @@ export function useGenerateComponent() {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ config, refinement }),
+        signal: controller.signal, // 2. Abort signal bekötése
       });
 
       if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error("Rate limit exceeded. Please try again in a moment.");
-        }
-        if (response.status === 402) {
-          throw new Error("Usage limit reached. Please add credits.");
-        }
-        throw new Error("Failed to generate component");
+        if (response.status === 429) throw new Error("Túl sok kérés. Kérlek várj egy kicsit.");
+        if (response.status === 402) throw new Error("Kredit limit elérve.");
+        throw new Error(`Hiba a generálás során: ${response.statusText}`);
       }
 
-      if (!response.body) {
-        throw new Error("No response body");
-      }
+      if (!response.body) throw new Error("Üres válasz érkezett");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let textBuffer = "";
-      let accumulatedCode = refinement ? "" : "";
-      let streamDone = false;
+      let buffer = "";
 
-      while (!streamDone) {
+      while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
 
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
+        buffer += decoder.decode(value, { stream: true });
+        
+        // 3. Biztonságosabb buffer feldolgozás
+        const lines = buffer.split("\n");
+        // Az utolsó elem lehet, hogy nem teljes sor, azt visszatesszük a pufferbe
+        buffer = lines.pop() || ""; 
 
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith(":") || trimmedLine === "data: [DONE]") continue;
+            
+            if (trimmedLine.startsWith("data: ")) {
+                try {
+                    const jsonStr = trimmedLine.slice(6);
+                    const parsed = JSON.parse(jsonStr);
+                    const content = parsed.choices?.[0]?.delta?.content;
 
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              accumulatedCode += content;
-              setGeneratedCode(cleanCodeOutput(accumulatedCode));
+                    if (content) {
+                        accumulatedCode += content;
+                        
+                        // 4. Throttling: Csak bizonyos időközönként frissítjük a React state-et
+                        const now = Date.now();
+                        if (now - lastUpdateTime > UPDATE_INTERVAL) {
+                            setGeneratedCode(cleanCodeOutput(accumulatedCode));
+                            lastUpdateTime = now;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("JSON parse error in stream line:", trimmedLine, e);
+                    // Nem dobunk hibát, hogy ne szakadjon meg a stream egyetlen rossz csomag miatt
+                }
             }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
         }
       }
 
-      // Final flush
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (raw.startsWith(":") || raw.trim() === "") continue;
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              accumulatedCode += content;
-            }
-          } catch { /* ignore */ }
-        }
-      }
-
+      // Végső frissítés a ciklus után, hogy biztosan minden karakter kikerüljön
       const finalCode = cleanCodeOutput(accumulatedCode);
       setGeneratedCode(finalCode);
-      
+
       if (!refinement) {
-        toast.success("Component generated successfully!");
+        toast.success("Komponens sikeresen legenerálva!");
       } else {
-        toast.success("Component updated!");
+        toast.success("Komponens frissítve!");
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('Generálás megszakítva felhasználó által.');
+        return; // Ne kezeljük hibaként
+      }
+
+      const errorMessage = err instanceof Error ? err.message : "Ismeretlen hiba történt";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
-      setIsGenerating(false);
+      // Csak akkor állítjuk le a loadingot, ha ez a controller az aktuális
+      if (abortControllerRef.current === controller) {
+        setIsGenerating(false);
+        abortControllerRef.current = null;
+      }
+    }
+  }, []);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+        setIsGenerating(false);
+        toast.info("Generálás leállítva.");
     }
   }, []);
 
   const reset = useCallback(() => {
+    stopGeneration();
     setGeneratedCode("");
     setError(null);
-  }, []);
+  }, [stopGeneration]);
 
   return {
     generatedCode,
     isGenerating,
     error,
     generateComponent,
+    stopGeneration, // Új funkció exportálása
     reset,
   };
 }
 
-// Clean up the code output - remove markdown code blocks if present
+// Utility: Markdown tisztító (kicsit optimalizálva)
 function cleanCodeOutput(code: string): string {
-  let cleaned = code.trim();
+  // Gyors ellenőrzés: ha nincs markdown jelölő, ne regexezzünk feleslegesen
+  if (!code.includes("```")) return code;
+
+  let cleaned = code;
+  // Eltávolítja a ```tsx, ```javascript, stb. kezdetet
+  cleaned = cleaned.replace(/^```[a-z]*\n?/i, "");
+  // Eltávolítja a záró ```-t
+  cleaned = cleaned.replace(/```$/, "");
   
-  // Remove markdown code block markers
-  if (cleaned.startsWith("```tsx") || cleaned.startsWith("```typescript") || cleaned.startsWith("```jsx")) {
-    cleaned = cleaned.replace(/^```(?:tsx|typescript|jsx|javascript)?\n?/, "");
-  }
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```\n?/, "");
-  }
-  if (cleaned.endsWith("```")) {
-    cleaned = cleaned.replace(/```$/, "");
-  }
-  
-  return cleaned.trim();
+  return cleaned;
 }

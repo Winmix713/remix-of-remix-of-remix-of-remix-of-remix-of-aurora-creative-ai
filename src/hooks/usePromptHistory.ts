@@ -1,106 +1,62 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { PromptHistory, InsertPromptHistory } from "@shared/schema";
 import { toast } from "sonner";
-import type { EnhanceMode } from "@/components/aurora/ModeSelector";
-
-export interface PromptHistoryItem {
-  id: string;
-  original_content: string;
-  enhanced_content: string;
-  mode: EnhanceMode;
-  file_type: string | null;
-  created_at: string;
-}
 
 export function usePromptHistory() {
-  const [history, setHistory] = useState<PromptHistoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: history = [], isLoading } = useQuery<PromptHistory[]>({
+    queryKey: ["/api/prompt-history"],
+  });
 
-  const fetchHistory = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("prompt_history")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
+  const saveToHistoryMutation = useMutation({
+    mutationFn: async (item: InsertPromptHistory) => {
+      const res = await apiRequest("POST", "/api/prompt-history", item);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-history"] });
+    },
+  });
 
-      if (error) throw error;
-      setHistory((data as PromptHistoryItem[]) || []);
-    } catch (error) {
-      console.error("Error fetching history:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const deleteFromHistoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/prompt-history/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-history"] });
+      toast.success("Elem törölve");
+    },
+  });
 
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+  const clearAllHistoryMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/prompt-history/clear");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/prompt-history"] });
+      toast.success("Előzmények törölve");
+    },
+  });
 
-  const saveToHistory = useCallback(async (
+  const saveToHistory = (
     originalContent: string,
     enhancedContent: string,
-    mode: EnhanceMode,
+    mode: any,
     fileType?: string
   ) => {
-    try {
-      const { error } = await supabase.from("prompt_history").insert({
-        original_content: originalContent.substring(0, 500), // Truncate for preview
-        enhanced_content: enhancedContent,
-        mode,
-        file_type: fileType || null,
-      });
-
-      if (error) throw error;
-      
-      // Refresh history
-      fetchHistory();
-    } catch (error) {
-      console.error("Error saving to history:", error);
-    }
-  }, [fetchHistory]);
-
-  const deleteFromHistory = useCallback(async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("prompt_history")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      setHistory(prev => prev.filter(item => item.id !== id));
-      toast.success("Előzmény törölve");
-    } catch (error) {
-      console.error("Error deleting from history:", error);
-      toast.error("Nem sikerült törölni");
-    }
-  }, []);
-
-  const clearAllHistory = useCallback(async () => {
-    try {
-      const { error } = await supabase
-        .from("prompt_history")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
-
-      if (error) throw error;
-      
-      setHistory([]);
-      toast.success("Előzmények törölve");
-    } catch (error) {
-      console.error("Error clearing history:", error);
-      toast.error("Nem sikerült törölni az előzményeket");
-    }
-  }, []);
+    saveToHistoryMutation.mutate({
+      originalContent,
+      enhancedContent,
+      mode,
+      fileType: fileType || null,
+    });
+  };
 
   return {
     history,
     isLoading,
     saveToHistory,
-    deleteFromHistory,
-    clearAllHistory,
-    refreshHistory: fetchHistory,
+    deleteFromHistory: (id: string) => deleteFromHistoryMutation.mutate(id),
+    clearAllHistory: () => clearAllHistoryMutation.mutate(),
   };
 }

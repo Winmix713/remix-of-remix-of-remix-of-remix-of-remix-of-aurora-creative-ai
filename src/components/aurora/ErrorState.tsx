@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 interface ErrorStateProps {
   error: string;
-  errorType?: "network" | "rate-limit" | "payment" | "generic";
+  errorType?: "network" | "rate-limit" | "payment" | "generic" | "abort";
   onRetry?: () => void;
   retryCount?: number;
 }
@@ -30,6 +30,13 @@ export function ErrorState({ error, errorType = "generic", onRetry, retryCount =
       description: "You've used all your AI credits. Add more credits to continue enhancing prompts.",
       color: "text-red-500",
       bgColor: "bg-red-500/10",
+    },
+    abort: {
+      icon: AlertTriangle,
+      title: "Request Cancelled",
+      description: "The enhancement request was cancelled.",
+      color: "text-muted-foreground",
+      bgColor: "bg-muted/10",
     },
     generic: {
       icon: AlertTriangle,
