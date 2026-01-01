@@ -3,7 +3,7 @@ import { History, X, Trash2, Copy, Check, FileText, Image, ChevronDown, ChevronU
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { PromptHistoryItem } from "@/hooks/usePromptHistory";
-import type { EnhanceMode } from "./ModeSelector";
+import type { EnhanceMode } from "@/types/enhance";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PromptHistoryProps {
